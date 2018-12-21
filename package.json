@@ -1,7 +1,7 @@
 {
   "name": "difuse",
   "version": "0.1.0",
-  "description": "JS dependency injection library",
+  "description": "IOC framework for JS/TS projects",
   "main": "dist/index.js",
   "scripts": {
     "test": "jest"
