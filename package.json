@@ -1,0 +1,28 @@
+{
+  "name": "difuse",
+  "version": "0.1.0",
+  "description": "JS dependency injection library",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chasebrewsky/DIFuse.git"
+  },
+  "keywords": [
+    "dependency",
+    "injection",
+    "DI"
+  ],
+  "author": "Chase Brewer",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chasebrewsky/DIFuse/issues"
+  },
+  "homepage": "https://github.com/chasebrewsky/DIFuse#readme",
+  "devDependencies": {
+    "jest": "23.6.0",
+    "typescript": "3.2.2"
+  }
+}
