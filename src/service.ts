@@ -2,7 +2,7 @@
  * Unique identifier for a service.
  */
 export class Token<T> {
-  constructor(public name: string) {}
+  constructor(public name: string = '') {}
 }
 
 /**

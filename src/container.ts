@@ -9,6 +9,8 @@ export class Container {
   private providers: Map<ServiceID<any>, Provider<any>> = new Map();
   private cache: Map<ServiceID<any>, any> = new Map();
 
+  constructor(public name: string = '') {}
+
   /**
    * Defines a constant value on the container.
    *
@@ -45,15 +47,15 @@ export class Container {
   public service<T>(
     service: Service<T>,
     providers: ServiceID<any>[] = [],
-    container?: Container,
+    container?: (container: Container) => void,
   ): Container {
     if (typeof service !== 'function') {
       throw new TypeError("Argument 'service' must be a function.");
     }
-    if (this.providers.has(service)) {
-      throw new Error(`Service '${service.name}' is already registered in the container.`);
-    }
-    this.providers.set(service, new ServiceProvider(service, providers, container));
+    this.exists(service);
+    const locals = new Container();
+    if (container) container(locals);
+    this.providers.set(service, new ServiceProvider(service, providers, locals));
     return this;
   }
 
@@ -71,6 +73,7 @@ export class Container {
     token: Token<T>,
     service: Service<T>,
     providers: ServiceID<any>[] = [],
+    container?: (container: Container) => void,
   ): Container {
     if (!(token instanceof Token)) {
       throw new TypeError("Argument 'token' must be an instance of Token.");
@@ -78,16 +81,21 @@ export class Container {
     if (typeof service !== 'function') {
       throw new TypeError("Argument 'service' must be a function.");
     }
-    if (this.providers.has(token)) {
-      throw new Error(`Token '${token.name}' is already registered.`);
-    }
-    this.providers.set(token, new InterfaceProvider(token, service, providers));
+    this.exists(token);
+    const locals = new Container();
+    if (container) container(locals);
+    this.providers.set(token, new InterfaceProvider(token, service, providers, locals));
+    return this;
+  }
+
+  public provider<T>(serviceID: ServiceID<T>, get: (container: Container) => T): Container {
+    this.exists(serviceID);
+    this.providers.set(serviceID, { serviceID, get });
     return this;
   }
 
   /**
    * Retrieves or instantiates and caches a service matching the given service ID.
-   *
    * @param serviceID ID of the service to retrieve from the container.
    */
   public get<T>(serviceID: ServiceID<T>): T {
@@ -109,5 +117,18 @@ export class Container {
     }
     // Error if service cannot be found.
     throw new Error(`Service '${serviceID.name}' cannot be resolved.`);
+  }
+
+  /**
+   * Checks if a service already exists in the container and errors if it
+   * already exists.
+   * @param serviceID Service to check for the existance of.
+   */
+  private exists(serviceID: ServiceID<any>) {
+    if (this.providers.has(serviceID)) {
+      throw new Error(
+        `Service '${serviceID.name}' is already registered in container '${this.name}'.`,
+      );
+    }
   }
 }
