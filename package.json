@@ -4,7 +4,9 @@
   "description": "IOC framework for JS/TS projects",
   "main": "dist/index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:travis": "jest --coverage --coverageReporters=text-lcov | coveralls"
   },
   "repository": {
     "type": "git",
@@ -13,16 +15,24 @@
   "keywords": [
     "dependency",
     "injection",
-    "DI"
+    "DI",
+    "IOC",
+    "inversion",
+    "control"
   ],
-  "author": "Chase Brewer",
+  "author": "Chase Brewer <chasebrewsky@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/chasebrewsky/DIFuse/issues"
   },
   "homepage": "https://github.com/chasebrewsky/DIFuse#readme",
   "devDependencies": {
+    "@types/jest": "23.3.10",
+    "coveralls": "3.0.2",
     "jest": "23.6.0",
+    "ts-jest": "23.10.5",
+    "tslint": "5.12.0",
+    "tslint-config-airbnb": "5.11.1",
     "typescript": "3.2.2"
   }
 }

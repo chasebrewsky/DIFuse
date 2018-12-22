@@ -1,0 +1,12 @@
+language: node_js
+
+# Ensure that the library works on both the previous and current LTS.
+node_js:
+  - "8"
+  - node
+
+# Cache dependencies for faster builds.
+cache: npm
+
+# Use a custom testing script for the travis build.
+script: npm run test:travis
