@@ -9,22 +9,25 @@ export class Container {
   private providers: Map<ServiceID<any>, Provider<any>> = new Map();
   private cache: Map<ServiceID<any>, any> = new Map();
 
+  /**
+   * Creates a Container instance.
+   * @param {string} name Descriptive name to give the container for errors.
+   */
   constructor(public name: string = '') {}
 
   /**
    * Defines a constant value on the container.
-   *
    * @param token Token ID to user as the service ID.
    * @param value Value to use for the constant.
+   * @throws TypeError If the token argument is not a Token.
    */
   public constant<T>(token: Token<T>, value: T): Container {
     if (!(token instanceof Token)) {
       throw new TypeError("Argument 'token' must be an instance of Token.");
     }
-    if (this.providers.has(token)) {
-      throw new Error(`Token '${token.name}' is already registered in the container.`);
-    }
+
     this.providers.set(token, new ConstantProvider(token, value));
+
     return this;
   }
 
@@ -33,29 +36,33 @@ export class Container {
    *
    * @param containers Parent container to retrieve services from.
    */
-  public inherit(...containers: Container[]) {
+  public inherit(...containers: Container[]): Container {
     for (const container of containers) this.parents.add(container);
+
+    return this;
   }
 
   /**
    * Defines a service and it's required providers to instantiate with.
    *
    * @param service Service function to instantiate.
-   * @param providers Provider dependencies to instantiate the service with.
-   * @param container Service level container to use for resolving providers.
+   * @param dependencies Dependencies to instantiate the service with.
+   * @param locals Function that instantiates a local container to use.
+   * @throws TypeError If the service argument is not a function.
    */
   public service<T>(
     service: Service<T>,
-    providers: ServiceID<any>[] = [],
-    container?: (container: Container) => void,
+    dependencies: ServiceID<any>[] = [],
+    locals?: (locals: Container) => void,
   ): Container {
     if (typeof service !== 'function') {
       throw new TypeError("Argument 'service' must be a function.");
     }
-    this.exists(service);
-    const locals = new Container();
-    if (container) container(locals);
-    this.providers.set(service, new ServiceProvider(service, providers, locals));
+
+    const provider = new ServiceProvider(service, dependencies, Container.locals(locals));
+
+    this.providers.set(service, provider);
+
     return this;
   }
 
@@ -65,70 +72,85 @@ export class Container {
    * Validates that that given service matches the interface defined on the token
    * if a validator is present on the token.
    *
+   * Throws an error if the token or service parameter are not of the right type.
+   *
    * @param token Token ID with optional interface validator.
    * @param service Service to associated with the given interface within the container.
-   * @param providers Providers that the given service requires during instantiation.
+   * @param dependencies Dependencies to instantiate the service with.
+   * @param locals Function that instantiates a local container to use.
    */
   public interface<T>(
     token: Token<T>,
     service: Service<T>,
-    providers: ServiceID<any>[] = [],
-    container?: (container: Container) => void,
+    dependencies: ServiceID<any>[] = [],
+    locals?: (locals: Container) => void,
   ): Container {
     if (!(token instanceof Token)) {
       throw new TypeError("Argument 'token' must be an instance of Token.");
     }
+
     if (typeof service !== 'function') {
       throw new TypeError("Argument 'service' must be a function.");
     }
-    this.exists(token);
-    const locals = new Container();
-    if (container) container(locals);
-    this.providers.set(token, new InterfaceProvider(token, service, providers, locals));
+
+    const provider = new InterfaceProvider(token, service, dependencies, Container.locals(locals));
+
+    this.providers.set(token, provider);
+
     return this;
   }
 
   public provider<T>(serviceID: ServiceID<T>, get: (container: Container) => T): Container {
-    this.exists(serviceID);
     this.providers.set(serviceID, { serviceID, get });
+
     return this;
   }
 
   /**
-   * Retrieves or instantiates and caches a service matching the given service ID.
-   * @param serviceID ID of the service to retrieve from the container.
+   * Retrieves service instance from this container or it's parents.
+   * @param serviceID Service ID of the service to retrieve.
    */
-  public get<T>(serviceID: ServiceID<T>): T {
-    // Check for service in local service cache.
-    const cached = this.cache.get(serviceID);
-    if (cached) return cached as T;
-    // Check for service provider in the current list of providers.
-    const provider = this.providers.get(serviceID);
-    if (provider) {
-      // Create service and place in cache if provider is present.
+  public get<T>(serviceID: ServiceID<T>): T | undefined {
+    if (this.cache.has(serviceID)) return this.cache.get(serviceID) as T;
+
+    if (this.providers.has(serviceID)) {
+      const provider = this.providers.get(serviceID)!;
       const service = provider.get(this);
+
       this.cache.set(serviceID, service);
+
       return service as T;
     }
-    // Check all parent containers for service.
+
     for (const parent of this.parents) {
-      const service = parent.get(serviceID);
-      if (service !== undefined) return service as T;
+      if (parent.has(serviceID)) return parent.get(serviceID);
     }
-    // Error if service cannot be found.
-    throw new Error(`Service '${serviceID.name}' cannot be resolved.`);
+
+    return undefined;
   }
 
   /**
-   * Checks if a service already exists in the container and errors if it
-   * already exists.
-   * @param serviceID Service to check for the existance of.
+   * Checks if a particular service is present on the container or parent containers.
+   * @param serviceID Service identifier.
    */
-  private exists(serviceID: ServiceID<any>) {
-    if (this.providers.has(serviceID)) {
-      throw new Error(
-        `Service '${serviceID.name}' is already registered in container '${this.name}'.`,
-      );
+  public has<T>(serviceID: ServiceID<T>): boolean {
+    if (this.cache.has(serviceID)) return true;
+    if (this.providers.has(serviceID)) return true;
+
+    for (const parent of this.parents) {
+      if (parent.has(serviceID)) return true;
     }
+
+    return false;
+  }
+
+  private static locals(locals?: (container: Container) => void): Container | undefined {
+    if (!locals) return undefined;
+
+    const container = new Container();
+
+    locals(container);
+
+    return container;
   }
 }

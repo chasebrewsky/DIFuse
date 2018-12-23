@@ -1,8 +1,8 @@
-import { Service, ServiceID, Token } from './service';
+import { Token } from './service';
 import { Container } from './container';
 
 describe('Container.constant()', () => {
-  test('creates a constant that can be retrieved from the container', () => {
+  test('sets a constant onto the container', () => {
     const container = new Container();
     const attempts: {
       token: Token<any>,
@@ -17,20 +17,68 @@ describe('Container.constant()', () => {
 
     for (const attempt of attempts) {
       container.constant(attempt.token, attempt.value);
-      const service = container.get(attempt.token);
-      expect(service).toBe(attempt.value);
+      expect(container.get(attempt.token)).toBe(attempt.value);
     }
   });
-});
 
-describe('Container.service', () => {
-  test('allows', () => {
+  test('should error if passed in token parameter is not a Token', () => {
+    const container = new Container();
 
+    expect(() => container.constant('hey' as any, 'hey')).toThrow();
   });
 });
 
-describe('Container.get', () => {
-  test('allows child containers to request constants from parents', () => {
+describe('Container.service()', () => {
+  test('sets a service with no dependencies onto the container', () => {
+    const container = new Container();
+    class Service {}
+
+    container.service(Service);
+    expect(container.get(Service)).toBeInstanceOf(Service);
+  });
+
+  test('sets a service with dependencies onto the container', () => {
+    const container = new Container();
+    const one = new Token();
+    const two = new Token();
+    class Service { constructor(public one: any, public two: any) {} }
+
+    container.constant(one, 1);
+    container.constant(two, 2);
+    container.service(Service, [one, two]);
+
+    const service = container.get(Service)!;
+
+    expect(service).toBeDefined();
+    expect(service.one).toEqual(1);
+    expect(service.two).toEqual(2);
+  });
+
+  test('allows a local container to override parent values', () => {
+    const token = new Token();
+    const container = new Container();
+    const expected = 'resolved';
+    class Service { constructor(public result: string) {} }
+
+    container.constant(token, 'unresolved');
+    container.service(Service, [token], (locals) => {
+      locals.constant(token, expected);
+    });
+
+    const service = container.get(Service) as Service;
+
+    expect(service.result).toEqual(expected);
+  });
+
+  test('errors if the passed in service is not a function', () => {
+    const container = new Container();
+
+    expect(() => container.service('hey' as any)).toThrow();
+  });
+});
+
+describe('Container.get()', () => {
+  test('retrieves constants from parent containers', () => {
     const attempts: {
       token: Token<any>,
       value: any,
@@ -42,90 +90,123 @@ describe('Container.get', () => {
 
     for (const attempt of attempts) {
       const parent = new Container();
-      const child = new Container();
+      const container = new Container();
 
       parent.constant(attempt.token, attempt.value);
-      child.inherit(parent);
-      expect(child.get(attempt.token)).toBe(attempt.value);
+      container.inherit(parent);
+      expect(container.get(attempt.token)).toBe(attempt.value);
     }
   });
 
-  test('allows child container to request services from parents', () => {
-    const attempts: {
-      service: Service<any>,
-    }[] = [
-      { service: class Service {} },
-      { service: class Another {} },
-      { service: class Final {} },
-    ];
-
-    for (const attempt of attempts) {
-      const parent = new Container();
-      const child = new Container();
-
-      parent.service(attempt.service);
-      child.inherit(parent);
-      expect(child.get(attempt.service)).toBeInstanceOf(attempt.service);
-    }
-  });
-
-  test('allows child container to request interfaces from parents', () => {
-    const attempts: {
-      service: Service<any>,
-      token: Token<any>,
-    }[] = [
-      { service: class Service {}, token: new Token('Service') },
-      { service: class Another {}, token: new Token('Another') },
-      { service: class Final {}, token: new Token('Final') },
-    ];
-
-    for (const attempt of attempts) {
-      const parent = new Container();
-      const child = new Container();
-
-      parent.interface(attempt.token, attempt.service);
-      child.inherit(parent);
-      expect(child.get(attempt.token)).toBeInstanceOf(attempt.service);
-    }
-  });
-
-  test('errors if a service and its dependency count does not match', () => {
+  test('retrieves services from parent containers', () => {
+    const parent = new Container();
     const container = new Container();
-    const constants: {
-      token: Token<any>
-      value: any,
-    }[] = [...Array(3)].map((_, index) => ({
-      token: new Token(String(index)),
-      value: index,
-    }));
-    const attempts: {
-      service: Service<any>,
-      dependencies: ServiceID<any>[],
-    }[] = [
-      {
-        service: class Service { constructor(one: number, two: number) {} },
-        dependencies: [constants[0].token],
-      },
-      {
-        service: class Another { constructor(one: number) {} },
-        dependencies: [constants[0].token, constants[1].token],
-      },
-      {
-        service: class Final { constructor() {} },
-        dependencies: [constants[0].token, constants[1].token, constants[2].token],
-      },
-    ];
 
-    for (const constant of constants) {
-      container.constant(constant.token, constant.value);
-    }
+    class Service {}
 
-    for (const attempt of attempts) {
-      expect(() => container.get(attempt.service)).toThrow(Error);
-    }
+    parent.service(Service);
+    container.inherit(parent);
+    expect(container.get(Service)).toBeInstanceOf(Service);
   });
 
-  test('errors if a service cannot resolve a dependency', () => {
+  test('retrieves interfaces from parent containers', () => {
+    const parent = new Container();
+    const container = new Container();
+    const token = new Token();
 
+    class Service {}
+
+    parent.interface(token, Service);
+    container.inherit(parent);
+    expect(container.get(token)).toBeInstanceOf(Service);
+  });
+
+  test('returns undefined if a value cannot be found', () => {
+    const container = new Container();
+
+    expect(container.get(new Token())).toBeUndefined();
+  });
+});
+
+describe('Container.has()', () => {
+  test('returns true if the service is located in cache', () => {
+    const container = new Container();
+    const token = new Token();
+
+    container.constant(token, 'hello');
+    container.get(token);
+    expect(container.has(token)).toEqual(true);
+  });
+
+  test('returns true if the provider is located on the container', () => {
+    const container = new Container();
+    const token = new Token();
+
+    container.constant(token, 'hello');
+    expect(container.has(token)).toEqual(true);
+  });
+
+  test('returns true of the parent has the service', () => {
+    const container = new Container();
+    const parent = new Container();
+    const token = new Token();
+
+    parent.constant(token, 'hello');
+    container.inherit(parent);
+    expect(container.has(token)).toEqual(true);
+  });
+
+  test('returns false if the container is not located anywhere', () => {
+    const container = new Container();
+
+    expect(container.has(new Token())).toEqual(false);
+  });
+
+  test('returns false if the containers parents do not have the service', () => {
+    const container = new Container();
+
+    container.inherit(new Container());
+    expect(container.has(new Token())).toEqual(false);
+  });
+});
+
+describe('Container.interface()', () => {
+  test('should error if a token is not passed as the token parameter', () => {
+    const container = new Container();
+    class Service {}
+
+    expect(() => container.interface('hey' as any, Service)).toThrow();
+  });
+
+  test('errors if a function is not passed as the service parameter', () => {
+    const container = new Container();
+    const token = new Token();
+
+    expect(() => container.interface(token, 'hey' as any)).toThrow();
+  });
+
+  test('allows a local container to overwrite parent container values', () => {
+    const container = new Container();
+    class Service { constructor(public result: string) {} }
+    const token = new Token<Service>();
+    const value = new Token();
+    const result = 'resolved';
+
+    container.constant(value, 'unresolved');
+    container.interface(token, Service, [value], (container) => {
+      container.constant(value, result);
+    });
+    expect(container.get(token)!.result).toEqual(result);
+  });
+});
+
+describe('Container.provider()', () => {
+  test('sets a generic provider onto the container', () => {
+    const container = new Container();
+    const token = new Token();
+    const value = 'resolved';
+
+    container.provider(token, container => value);
+    expect(container.get(token)).toEqual(value);
   });
 });

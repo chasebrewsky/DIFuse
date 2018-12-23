@@ -1,9 +1,11 @@
 {
   "name": "difuse",
   "version": "0.1.0",
-  "description": "IOC framework for JS/TS projects",
-  "main": "dist/index.js",
+  "description": "IOC framework for node projects",
+  "main": "lib/index.js",
   "scripts": {
+    "build": "tsc",
+    "lint": "tslint -p tsconfig.json",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:travis": "jest --coverage --coverageReporters=text-lcov | coveralls"

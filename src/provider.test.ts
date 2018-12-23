@@ -1,6 +1,6 @@
 import { Service, Token } from './service';
 import { Container } from './container';
-import { ConstantProvider, ServiceProvider } from './provider';
+import { ConstantProvider, InterfaceProvider, ServiceProvider } from './provider';
 
 describe('ConstantProvider.get()', () => {
   test('returns the original value it was provided during initialization', () => {
@@ -97,26 +97,18 @@ describe('ServiceProvider.get()', () => {
     }
   });
 
-  test('should resolve using the passed in container', () => {
+  test('should resolve using the passed in local container', () => {
     const token = new Token('value');
     const value = 'resolved';
     const parent = new Container().constant(token, 'unresolved');
     const local = new Container().constant(token, value);
 
-    let resolved: string = '';
+    class Service { constructor(public value: string) {} }
 
-    const provider = new ServiceProvider(
-      class Service {
-        constructor(value: string) {
-          resolved = value;
-        }
-      },
-      [token],
-      local,
-    );
+    const provider = new ServiceProvider(Service, [token], local);
+    const service = provider.get(parent);
 
-    provider.get(parent);
-    expect(resolved).toEqual(value);
+    expect(service.value).toEqual(value);
   });
 
   test('should error when a dependency cannot be resolved', () => {
@@ -124,6 +116,48 @@ describe('ServiceProvider.get()', () => {
     const provider = new ServiceProvider(
       class Service { constructor(value: any) {} },
       [new Token('value')],
+    );
+
+    expect(() => provider.get(container)).toThrow();
+  });
+});
+
+describe('new InterfaceProvider()', () => {
+  test('errors when the service argument length and dependecy length do not match', () => {
+    const tokens: Token<any>[] = [...Array(2)].map((_, index) => new Token(String(index)));
+    const attempts: {
+      service: Service<any>,
+      dependencies: Token<any>[],
+    }[] = [
+      {
+        service: class Service { constructor(one: any) {} },
+        dependencies: [tokens[0], tokens[1]],
+      },
+      {
+        service: class Service { constructor() {} },
+        dependencies: [tokens[0]],
+      },
+      {
+        service: class Service { constructor(one: any) {} },
+        dependencies: [],
+      },
+    ];
+
+    for (const attempt of attempts) {
+      expect(() => {
+        new InterfaceProvider(new Token(), attempt.service, attempt.dependencies);
+      }).toThrow();
+    }
+  });
+});
+
+describe('InterfaceProvider.get()', () => {
+  test('errors when a dependency cannot be resolved', () => {
+    const container = new Container();
+    const provider = new InterfaceProvider(
+      new Token(),
+      class Service { constructor(value: any) {} },
+      [new Token()],
     );
 
     expect(() => provider.get(container)).toThrow();

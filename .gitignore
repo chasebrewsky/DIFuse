@@ -1,6 +1,4 @@
 # Logs
-logs
-*.log
 npm-debug.log*
 
 # Runtime data
@@ -29,3 +27,6 @@ node_modules/
 
 # IntelliJ output information.
 .idea/
+
+# Compiled Javascript.
+lib/
