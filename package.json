@@ -1,6 +1,6 @@
 {
   "name": "difuse",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "IOC framework for node projects",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -13,7 +13,7 @@
     "prepare": "npm run build"
   },
   "engines": {
-    "node" : ">=8.0.0"
+    "node": ">=8.0.0"
   },
   "repository": {
     "type": "git",
