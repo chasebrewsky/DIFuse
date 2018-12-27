@@ -4,13 +4,15 @@
     "module": "commonjs",
     "lib": ["es2017"],
     "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
     "outDir": "./lib",
-    "removeComments": true,
-
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true
-  }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/**/*.test.ts"
+  ]
 }

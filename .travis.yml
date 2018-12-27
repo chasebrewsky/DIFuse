@@ -11,3 +11,12 @@ cache: npm
 
 # Use a custom testing script for the travis build.
 script: npm run test:travis
+
+# Deploy to NPM when a new tag is present on the master branch.
+deploy:
+  provider: npm
+  email: $NPM_EMAIL
+  api_key: $NPM_TOKEN
+  on:
+    tags: true
+    branch: master

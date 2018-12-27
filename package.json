@@ -1,14 +1,19 @@
 {
   "name": "difuse",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "IOC framework for node projects",
   "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc",
     "lint": "tslint -p tsconfig.json",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "test:travis": "jest --coverage --coverageReporters=text-lcov | coveralls"
+    "test:travis": "jest --coverage --coverageReporters=text-lcov | coveralls",
+    "prepare": "npm run build"
+  },
+  "engines": {
+    "node" : ">=8.0.0"
   },
   "repository": {
     "type": "git",
@@ -27,6 +32,9 @@
   "bugs": {
     "url": "https://github.com/chasebrewsky/DIFuse/issues"
   },
+  "files": [
+    "/lib"
+  ],
   "homepage": "https://github.com/chasebrewsky/DIFuse#readme",
   "devDependencies": {
     "@types/jest": "23.3.10",

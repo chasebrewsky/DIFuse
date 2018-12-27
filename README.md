@@ -14,7 +14,7 @@ The architecture behind some of these libraries is quite brilliant, but many of 
 * Decorators are currently only a stage 2 proposal at the time of writing this and haven't been implemented in the main language. This means that current implementations may be subject to change if they decide to rewrite the current draft.
 * Most current IOC frameworks written in Typescript tend to make use of the [Reflect API](https://github.com/rbuckton/reflect-metadata) to autoinject values based on their type definitions. This can fragment the codebase between the Typescript and Javascript implementations if not carefully architected. It also creates the potential for the library to break when sweeping changes are made in an ECMA major version upgrade since the [metadata proposal](https://rbuckton.github.io/reflect-metadata/) hasn't even been considered for ECMA adoption yet. Typescript documentation even warns developers that reflect metadata is still an experimental feature and subject to change in the future.
 
-This uncertainty in the future of decorators and metadata can sometimes make using them a hard sell to developer teams attempting to make a long term application. They typically don't have the luxury of waiting until they become stable to begin making application.
+This uncertainty in the future of decorators and metadata can sometimes make using them a hard sell to developer teams attempting to make a long term application. They typically don't have the luxury of waiting until they become stable before beginning a project.
 
 The goal of this library was to implement a modern IOC solution for node without having to rely or build around the functionality of decorators.
 
@@ -23,7 +23,7 @@ The goal of this library was to implement a modern IOC solution for node without
 In order to work around decorators, this library drew inspiration the IOC system present in the original AngularJS framework. The IOC component of this framework worked quite well for building medium sized projects with swappable services. There were a few downsides to it's implementation though:
 
 * Once a project got to a certain size, maintaining and refactoring the string identifiers for services became a nightmare. When there was a naming conflict and names had to be changed around, it wasn't simply a matter of allowing an IDE to find and refactor the name of a function or method; it was a trial and error effort to make sure that all tests passed and no bugs were introduced after the change.
-* There wasn't much granular control over injecting one off depdendencies for a particular service in a module. Either you replaced that service for every service in the module or you were out of luck.
+* There wasn't much granular control over injecting one off dependendencies for a particular service in a module. Either you replaced that service for every service in the module or you were out of luck.
 
 DIFuse aims to use the same general idea of the AngularJS IOC implementation while improving upon it's shortcomings.
 
