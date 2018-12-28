@@ -10,7 +10,7 @@
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:travis": "jest --coverage --coverageReporters=text-lcov | coveralls",
-    "prepare": "npm install && npm run build"
+    "prepublishOnly": "npm install && npm run build"
   },
   "engines": {
     "node": ">=8.0.0"
