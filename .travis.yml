@@ -1,0 +1,23 @@
+language: node_js
+
+# Ensure that the library works on both the previous and current LTS.
+node_js:
+  - "8"
+  - "10"
+  - node
+
+# Cache dependencies for faster builds.
+cache: npm
+
+# Use a custom testing script for the travis build.
+script: npm run test:travis
+
+# Deploy to NPM when a new tag is present on the master branch.
+deploy:
+  provider: npm
+  email: $NPM_EMAIL
+  api_key: $NPM_TOKEN
+  on:
+    branch: master
+    node: "10"
+    tags: true
